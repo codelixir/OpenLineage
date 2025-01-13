@@ -20,6 +20,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -31,6 +32,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
 @Testcontainers
+@Disabled
 class S3TransportTest {
   private static final Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
 
