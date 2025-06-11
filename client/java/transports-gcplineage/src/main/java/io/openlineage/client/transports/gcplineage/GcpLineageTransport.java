@@ -153,8 +153,8 @@ public class GcpLineageTransport extends Transport {
     }
 
     public <T extends OpenLineage.BaseEvent> void emitEvent(T event) {
+      final String eventJson = OpenLineageClientUtils.toJson(event);
       try {
-        String eventJson = OpenLineageClientUtils.toJson(event);
         Struct openLineageStruct = OpenLineageHelper.jsonToStruct(eventJson);
         ProcessOpenLineageRunEventRequest request =
             ProcessOpenLineageRunEventRequest.newBuilder()
@@ -167,6 +167,7 @@ public class GcpLineageTransport extends Transport {
           handleRequestAsync(request);
         }
       } catch (Exception e) {
+        log.error("Failed to emit lineage event: {}", eventJson, e);
         throw new OpenLineageClientException(e);
       }
     }
@@ -178,12 +179,12 @@ public class GcpLineageTransport extends Transport {
           new ApiFutureCallback<ProcessOpenLineageRunEventResponse>() {
             @Override
             public void onFailure(Throwable t) {
-              log.error("Failed to collect a lineage event: {}", request.getOpenLineage(), t);
+              log.error("Failed to collect a lineage event: {}", OpenLineageClientUtils.toJson(request.getOpenLineage()), t);
             }
 
             @Override
             public void onSuccess(ProcessOpenLineageRunEventResponse result) {
-              log.debug("Event sent successfully: {}", request.getOpenLineage());
+              log.debug("Event sent successfully: {}", OpenLineageClientUtils.toJson(request.getOpenLineage()));
             }
           };
       ApiFutures.addCallback(future, callback, MoreExecutors.directExecutor());
