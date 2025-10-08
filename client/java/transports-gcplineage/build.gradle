@@ -12,18 +12,147 @@ plugins {
     id 'signing'
     id "com.adarshr.test-logger" version "3.2.0"
     id 'com.diffplug.spotless' version '7.0.2'
+    id "com.google.cloud.artifactregistry.gradle-plugin" version "2.2.5"
     id "com.gradleup.shadow" version "8.3.6"
     id "pmd"
     id "io.freefair.lombok" version "8.13.1"
 }
 
+pmd {
+    consoleOutput = true
+    toolVersion = "6.46.0"
+    rulesMinimumPriority = 5
+    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
+    ruleSets = []
+    ignoreFailures = false
+}
+
+pmdMain {
+    reports {
+        html.required = true
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
 ext {
     projectDescription = "GcpLineage OpenLineage transport library"
+    assertjVersion = '3.26.3'
+    junit5Version = '5.11.4'
+    lombokVersion = '1.18.34'
+    mockitoVersion = '5.2.0'
+    micrometerVersion = '1.14.1'
+    isReleaseVersion = !version.endsWith('SNAPSHOT')
+    guavaVersion = '33.2.1-jre'
 }
 
 dependencies {
+    compileOnly(rootProject)
+    compileOnly("com.fasterxml.jackson.core:jackson-core:${jacksonVersion}")
+    compileOnly("com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}")
+    compileOnly("org.slf4j:slf4j-api:1.7.36")
+
+    annotationProcessor ("org.projectlombok:lombok:${lombokVersion}")
+
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation "com.google.guava:guava:${guavaVersion}"
+
     implementation "com.google.cloud.datalineage:producerclient-java8:1.0.0"
     implementation "com.google.cloud:google-cloud-datalineage:0.55.0"
 }
 
-apply from: '../transports.build.gradle'
+configurations {
+    testImplementation.extendsFrom compileOnly
+}
+
+compileJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+compileTestJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = "com.google.cloud.openlineage"
+            artifactId = "transports-gcplineage"
+            from components.java
+        }
+    }
+
+    processResources {
+        filter ReplaceTokens, tokens: [
+                "version": project.property("version")
+        ]
+    }
+
+    repositories {
+        if (isReleaseVersion) {
+            maven {
+                url = 'artifactregistry://us-central1-maven.pkg.dev/cloud-dataproc-prod/dataproc'
+            }
+        }
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+                'Created-By': "Gradle ${gradle.gradleVersion}",
+                'Built-By': System.getProperty('user.name'),
+                'Build-Jdk': System.getProperty('java.version'),
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+}
+
+spotless {
+    java {
+        target fileTree('.') {
+            include '**/*.java'
+            exclude '**/build/**'
+        }
+        googleJavaFormat()
+        removeUnusedImports()
+    }
+}
+
+def reportsDir = "${getLayout().getBuildDirectory()}/reports";
+def coverageDir = "${reportsDir}/coverage";
+
+jacoco {
+    toolVersion = '0.8.12'
+    reportsDir = file(coverageDir)
+}
+
+jacocoTestReport {
+    reports {
+        xml {
+            enabled true
+        }
+        html {
+            enabled true
+            destination = file(coverageDir)
+        }
+    }
+}
