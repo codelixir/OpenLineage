@@ -180,6 +180,7 @@ shadowJar {
     }
 
     relocate "com.github.ok2c.hc5", "io.openlineage.spark.shaded.com.github.ok2c.hc5"
+    relocate "io.micrometer", "io.openlineage.spark.shaded.io.micrometer"
     relocate "org.apache.httpcomponents.client5", "io.openlineage.spark.shaded.org.apache.httpcomponents.client5"
     relocate "javassist", "io.openlineage.spark.shaded.javassist"
     relocate "org.apache.hc", "io.openlineage.spark.shaded.org.apache.hc"

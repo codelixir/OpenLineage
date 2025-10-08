@@ -66,8 +66,8 @@ dependencies {
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "com.google.guava:guava:${guavaVersion}"
 
-    implementation "com.google.cloud.datalineage:producerclient-java8:1.0.0"
-    implementation "com.google.cloud:google-cloud-datalineage:0.55.0"
+    implementation "com.google.cloud.datalineage:producerclient:1.1.11" // Java 11
+    implementation "com.google.cloud:google-cloud-datalineage:0.60.0"
 }
 
 configurations {
@@ -124,6 +124,51 @@ jar {
                 'Implementation-Version': project.version
         )
     }
+}
+
+shadowJar {
+    def packagesToRelocate = [
+            'android.annotation',
+            'com.google.api',
+            'com.google.apps',
+            'com.google.auth',
+            'com.google.auto',
+            'com.google.cloud',
+            'com.google.common',
+            'com.google.errorprone',
+            'com.google.geo',
+            'com.google.gson',
+            'com.google.iam',
+            'com.google.j2objc',
+            'com.google.logging',
+            'com.google.longrunning',
+            'com.google.protobuf',
+            'com.google.re2j',
+            'com.google.rpc',
+            'com.google.shopping',
+            'com.google.thirdparty',
+            'com.google.type',
+            'io.perfmark',
+
+            'javax.annotation',
+            'io.grpc',
+            'io.opencensus',
+            'io.netty',
+            'org.conscrypt',
+
+            'org.apache.commons',
+            'org.apache.http',
+            'org.checkerframework',
+            'org.codehaus.mojo',
+            'org.threeten',
+    ]
+
+    packagesToRelocate.each { packageName ->
+        relocate packageName, "io.openlineage.client.shaded.${packageName}"
+    }
+
+    relocate 'META-INF/native/libconscrypt_openjdk', 'META-INF/native/libio_openlineage_client_shaded_conscrypt_openjdk'
+    relocate 'META-INF/native/conscrypt_openjdk', 'META-INF/native/io_openlineage_client_shaded_conscrypt_openjdk'
 }
 
 spotless {
